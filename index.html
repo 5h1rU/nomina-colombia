@@ -364,15 +364,11 @@
                 <p style="color:#64ffda;margin-bottom:16px;" id="summaryPeriod"></p>
                 
                 <div class="row">
-                    <span class="label">Días a pagar (salario)</span>
-                    <span class="value" id="diasPagar">0</span>
-                </div>
-                <div class="row">
-                    <span class="label">Salario proporcional</span>
+                    <span class="label">Salario fijo (quincena)</span>
                     <span class="value" id="salarioBase">$0</span>
                 </div>
                 <div class="row">
-                    <span class="label">Auxilio transporte legal (proporcional)</span>
+                    <span class="label">Auxilio transporte legal (quincena)</span>
                     <span class="value" id="auxTransporte">$0</span>
                 </div>
                 <div class="row highlight">
@@ -528,8 +524,9 @@
                     </div>
                 </div>
                 <div class="info-box">
-                    💡 Bono transporte = Total diario ($27,100) - Auxilio legal diario ($249,095 ÷ 30)<br>
-                    Se paga solo los días efectivamente trabajados.
+                    💡 <strong>Ley colombiana:</strong> El salario es fijo por quincena.<br>
+                    El bono transporte = Total diario - Auxilio legal diario.<br>
+                    Solo el bono se paga por días efectivamente trabajados.
                 </div>
             </div>
 
@@ -797,21 +794,24 @@
             const monthKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
             const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
             
-            // Period label
+            // Period label and fixed salary factor
             let periodLabel = `${MONTHS[currentMonth]} ${currentYear}`;
-            let daysInPeriod = daysInMonth;
+            let salaryFactor = 1; // Full month
+            let daysInPeriod = 30;
+            
             if (summaryQuincena === 1) {
                 periodLabel = `${MONTHS[currentMonth]} 1-15, ${currentYear}`;
+                salaryFactor = 0.5; // Half month (quincena)
                 daysInPeriod = 15;
             } else if (summaryQuincena === 2) {
                 periodLabel = `${MONTHS[currentMonth]} 16-${daysInMonth}, ${currentYear}`;
+                salaryFactor = 0.5; // Half month (quincena)
                 daysInPeriod = daysInMonth - 15;
             }
             document.getElementById('summaryPeriod').textContent = periodLabel;
             
-            // Count days
-            let paidDays = 0; // For salary (worked + holiday + vacation)
-            let workedDays = 0; // For transport bonus (only worked)
+            // Count only worked days for transport bonus
+            let workedDays = 0;
             
             Object.entries(attendance).forEach(([date, type]) => {
                 if (!date.startsWith(monthKey)) return;
@@ -819,24 +819,16 @@
                 if (!isInQuincena(day, summaryQuincena)) return;
                 
                 if (type === 'worked') {
-                    paidDays += 1;
                     workedDays += 1;
-                } else if (type === 'holiday' || type === 'vacation') {
-                    paidDays += 1;
-                    // No transport bonus on holidays/vacation
                 } else if (type === 'half') {
-                    paidDays += 0.5;
                     workedDays += 0.5;
-                } else if (type === 'sick') {
-                    paidDays += 0.6667;
-                    // No transport bonus on sick days
                 }
+                // Salary is FIXED per quincena, not affected by attendance
             });
             
-            // Calculate proportional factor for the period
-            const factor = paidDays / 30;
-            const salario = settings.salario * factor;
-            const auxilioLegal = settings.auxilio * factor;
+            // FIXED salary per quincena (Colombian law)
+            const salario = settings.salario * salaryFactor;
+            const auxilioLegal = settings.auxilio * salaryFactor;
             
             // Transport bonus: only for worked days
             const auxilioDiario = settings.auxilio / 30;
@@ -873,7 +865,6 @@
             const costoTotal = totalDevengadoBruto + totalPrestaciones + totalSegSocial + totalParafiscales;
             
             // Update UI
-            document.getElementById('diasPagar').textContent = paidDays.toFixed(1);
             document.getElementById('diasBono').textContent = workedDays;
             document.getElementById('bonoValor').textContent = Math.round(bonoDiario).toLocaleString('es-CO');
             document.getElementById('salarioBase').textContent = formatCurrency(salario);
@@ -894,7 +885,7 @@
             document.getElementById('intCesantias').textContent = formatCurrency(intCesantias);
             document.getElementById('vacaciones').textContent = formatCurrency(vacaciones);
             
-            return { paidDays, workedDays, netoPagar, costoTotal, bonoTransporte };
+            return { workedDays, netoPagar, costoTotal, bonoTransporte, salaryFactor };
         }
 
         function formatCurrency(value) {
@@ -903,7 +894,7 @@
 
         // History
         function saveQuincena() {
-            const { paidDays, workedDays, netoPagar, costoTotal, bonoTransporte } = updateSummary();
+            const { workedDays, netoPagar, costoTotal, bonoTransporte, salaryFactor } = updateSummary();
             const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
             
             let periodKey, periodName;
@@ -924,7 +915,6 @@
             history.push({
                 period: periodKey,
                 periodName,
-                paidDays,
                 workedDays,
                 netoPagar,
                 costoTotal,
@@ -960,7 +950,7 @@
                 <div class="history-item">
                     <div>
                         <div class="history-month">${h.periodName}</div>
-                        <div class="history-details">${h.workedDays || h.paidDays} días trabajados</div>
+                        <div class="history-details">${h.workedDays || 0} días con bono transporte</div>
                     </div>
                     <div class="history-amount">${formatCurrency(h.netoPagar)}</div>
                 </div>
@@ -970,7 +960,7 @@
             const totals = history.reduce((acc, h) => ({
                 pagado: acc.pagado + h.netoPagar,
                 costo: acc.costo + h.costoTotal,
-                dias: acc.dias + (h.workedDays || h.paidDays),
+                dias: acc.dias + (h.workedDays || 0),
                 bono: acc.bono + (h.bonoTransporte || 0)
             }), { pagado: 0, costo: 0, dias: 0, bono: 0 });
             
