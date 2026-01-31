@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Calculadora Nómina Colombia 2026</title>
+    <title>Control Nómina Colombia 2026</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         body {
@@ -13,55 +13,183 @@
             padding: 20px;
             color: #fff;
         }
-        .container {
-            max-width: 600px;
-            margin: 0 auto;
+        .container { max-width: 800px; margin: 0 auto; }
+        h1 { text-align: center; margin-bottom: 8px; font-size: 1.6rem; }
+        .subtitle { text-align: center; color: #8892b0; margin-bottom: 24px; font-size: 0.9rem; }
+        
+        .tabs {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+            overflow-x: auto;
         }
-        h1 {
-            text-align: center;
-            margin-bottom: 10px;
-            font-size: 1.8rem;
-        }
-        .subtitle {
-            text-align: center;
+        .tab {
+            padding: 10px 20px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: transparent;
             color: #8892b0;
-            margin-bottom: 30px;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.2s;
         }
+        .tab.active { background: #64ffda; color: #1a1a2e; border-color: #64ffda; }
+        .tab:hover:not(.active) { border-color: #64ffda; color: #64ffda; }
+
         .card {
             background: rgba(255,255,255,0.05);
             border-radius: 16px;
-            padding: 24px;
-            margin-bottom: 20px;
+            padding: 20px;
+            margin-bottom: 16px;
             backdrop-filter: blur(10px);
             border: 1px solid rgba(255,255,255,0.1);
         }
-        .card h2 {
-            font-size: 1.1rem;
-            color: #64ffda;
-            margin-bottom: 16px;
+        .card h2 { font-size: 1rem; color: #64ffda; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+        
+        .employee-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 12px;
         }
-        .input-group {
-            margin-bottom: 16px;
-        }
-        label {
-            display: block;
-            margin-bottom: 6px;
-            color: #ccd6f6;
-            font-size: 0.9rem;
-        }
+        .employee-name { font-size: 1.3rem; font-weight: 600; }
+        .employee-since { color: #8892b0; font-size: 0.85rem; }
+        
+        .input-row { display: flex; gap: 12px; flex-wrap: wrap; }
+        .input-group { flex: 1; min-width: 200px; margin-bottom: 12px; }
+        .input-group.small { min-width: 120px; flex: 0.5; }
+        label { display: block; margin-bottom: 6px; color: #ccd6f6; font-size: 0.85rem; }
         input, select {
             width: 100%;
-            padding: 12px 16px;
+            padding: 10px 14px;
             border: 1px solid rgba(255,255,255,0.2);
             border-radius: 8px;
             background: rgba(255,255,255,0.05);
             color: #fff;
-            font-size: 1rem;
+            font-size: 0.95rem;
         }
-        input:focus, select:focus {
-            outline: none;
-            border-color: #64ffda;
+        input:focus, select:focus { outline: none; border-color: #64ffda; }
+        
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.2s;
         }
+        .btn-primary { background: #64ffda; color: #1a1a2e; }
+        .btn-primary:hover { background: #52e0c4; }
+        .btn-secondary { background: rgba(255,255,255,0.1); color: #ccd6f6; }
+        .btn-secondary:hover { background: rgba(255,255,255,0.2); }
+        .btn-danger { background: #ff6b6b; color: #fff; }
+        
+        /* Calendar */
+        .calendar-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+        }
+        .calendar-nav { display: flex; gap: 8px; align-items: center; }
+        .calendar-nav button {
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            border: 1px solid rgba(255,255,255,0.2);
+            background: transparent;
+            color: #fff;
+            cursor: pointer;
+        }
+        .calendar-nav button:hover { border-color: #64ffda; color: #64ffda; }
+        .month-year { font-size: 1.1rem; font-weight: 600; min-width: 160px; text-align: center; }
+        
+        .calendar-grid {
+            display: grid;
+            grid-template-columns: repeat(7, 1fr);
+            gap: 4px;
+        }
+        .calendar-day-header {
+            text-align: center;
+            padding: 8px;
+            color: #8892b0;
+            font-size: 0.75rem;
+            font-weight: 600;
+        }
+        .calendar-day {
+            aspect-ratio: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 0.9rem;
+            border: 2px solid transparent;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .calendar-day:hover { border-color: rgba(255,255,255,0.3); }
+        .calendar-day.empty { cursor: default; }
+        .calendar-day.empty:hover { border-color: transparent; }
+        .calendar-day.today { border-color: #64ffda; }
+        .calendar-day.future { opacity: 0.4; cursor: not-allowed; }
+        
+        .calendar-day.worked { background: #2ecc71; color: #fff; }
+        .calendar-day.absent { background: #e74c3c; color: #fff; }
+        .calendar-day.vacation { background: #3498db; color: #fff; }
+        .calendar-day.sick { background: #9b59b6; color: #fff; }
+        .calendar-day.holiday { background: #f39c12; color: #fff; }
+        .calendar-day.half { background: linear-gradient(135deg, #2ecc71 50%, #e74c3c 50%); color: #fff; }
+        
+        .calendar-day .indicator {
+            font-size: 0.6rem;
+            position: absolute;
+            bottom: 2px;
+        }
+        
+        .legend {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid rgba(255,255,255,0.1);
+        }
+        .legend-item {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            font-size: 0.8rem;
+            color: #8892b0;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 4px;
+            transition: all 0.2s;
+        }
+        .legend-item:hover { background: rgba(255,255,255,0.1); }
+        .legend-item.selected { background: rgba(255,255,255,0.2); }
+        .legend-dot {
+            width: 14px; height: 14px;
+            border-radius: 4px;
+        }
+        
+        /* Stats */
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
+            gap: 12px;
+        }
+        .stat-box {
+            background: rgba(255,255,255,0.05);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+        .stat-value { font-size: 1.5rem; font-weight: 700; color: #64ffda; }
+        .stat-label { font-size: 0.75rem; color: #8892b0; margin-top: 4px; }
+        
+        /* Summary rows */
         .row {
             display: flex;
             justify-content: space-between;
@@ -72,222 +200,683 @@
         .row .label { color: #8892b0; }
         .row .value { font-weight: 600; color: #ccd6f6; }
         .row.total { 
-            margin-top: 10px;
-            padding-top: 16px;
-            border-top: 2px solid #64ffda;
-            border-bottom: none;
+            margin-top: 8px; padding-top: 12px;
+            border-top: 2px solid #64ffda; border-bottom: none;
         }
-        .row.total .label, .row.total .value {
-            color: #64ffda;
-            font-size: 1.1rem;
+        .row.total .label, .row.total .value { color: #64ffda; font-size: 1.05rem; }
+        
+        /* History */
+        .history-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 8px;
+            margin-bottom: 8px;
         }
-        .info {
+        .history-month { font-weight: 600; }
+        .history-details { color: #8892b0; font-size: 0.85rem; }
+        .history-amount { color: #64ffda; font-weight: 600; }
+        
+        .section { display: none; }
+        .section.active { display: block; }
+        
+        .info-box {
             background: rgba(100, 255, 218, 0.1);
             border-left: 3px solid #64ffda;
             padding: 12px 16px;
-            margin-top: 16px;
             border-radius: 0 8px 8px 0;
             font-size: 0.85rem;
             color: #8892b0;
+            margin-top: 12px;
         }
-        .toggle-group {
-            display: flex;
-            gap: 10px;
-            margin-bottom: 16px;
-        }
-        .toggle-btn {
-            flex: 1;
-            padding: 10px;
-            border: 1px solid rgba(255,255,255,0.2);
-            border-radius: 8px;
-            background: transparent;
+        
+        .empty-state {
+            text-align: center;
+            padding: 40px;
             color: #8892b0;
-            cursor: pointer;
-            transition: all 0.2s;
         }
-        .toggle-btn.active {
-            background: #64ffda;
-            color: #1a1a2e;
-            border-color: #64ffda;
-        }
+        .empty-state .icon { font-size: 3rem; margin-bottom: 16px; }
+        
         footer {
             text-align: center;
-            margin-top: 30px;
+            margin-top: 24px;
             color: #8892b0;
-            font-size: 0.8rem;
+            font-size: 0.75rem;
+        }
+        
+        @media (max-width: 500px) {
+            .calendar-day { font-size: 0.75rem; }
+            .legend { justify-content: center; }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>💰 Calculadora Nómina</h1>
+        <h1>📋 Control de Nómina</h1>
         <p class="subtitle">Colombia 2026 - Salario Mínimo</p>
 
-        <div class="card">
-            <h2>⚙️ Configuración</h2>
-            <div class="input-group">
-                <label>Días trabajados en el mes</label>
-                <input type="number" id="diasTrabajados" value="30" min="1" max="30">
+        <div class="tabs">
+            <button class="tab active" onclick="showSection('calendar')">📅 Asistencia</button>
+            <button class="tab" onclick="showSection('summary')">💰 Liquidación</button>
+            <button class="tab" onclick="showSection('history')">📊 Historial</button>
+            <button class="tab" onclick="showSection('settings')">⚙️ Configuración</button>
+        </div>
+
+        <!-- Calendar Section -->
+        <div id="section-calendar" class="section active">
+            <div class="card">
+                <div class="calendar-header">
+                    <h2>📅 Registro de Asistencia</h2>
+                    <div class="calendar-nav">
+                        <button onclick="changeMonth(-1)">←</button>
+                        <span class="month-year" id="monthYear"></span>
+                        <button onclick="changeMonth(1)">→</button>
+                    </div>
+                </div>
+                
+                <div class="calendar-grid" id="calendarGrid"></div>
+                
+                <div class="legend">
+                    <div class="legend-item selected" data-type="worked" onclick="selectType('worked')">
+                        <div class="legend-dot" style="background:#2ecc71"></div> Trabajado
+                    </div>
+                    <div class="legend-item" data-type="absent" onclick="selectType('absent')">
+                        <div class="legend-dot" style="background:#e74c3c"></div> Ausencia
+                    </div>
+                    <div class="legend-item" data-type="vacation" onclick="selectType('vacation')">
+                        <div class="legend-dot" style="background:#3498db"></div> Vacaciones
+                    </div>
+                    <div class="legend-item" data-type="sick" onclick="selectType('sick')">
+                        <div class="legend-dot" style="background:#9b59b6"></div> Incapacidad
+                    </div>
+                    <div class="legend-item" data-type="holiday" onclick="selectType('holiday')">
+                        <div class="legend-dot" style="background:#f39c12"></div> Festivo
+                    </div>
+                    <div class="legend-item" data-type="half" onclick="selectType('half')">
+                        <div class="legend-dot" style="background:linear-gradient(135deg, #2ecc71 50%, #e74c3c 50%)"></div> Medio día
+                    </div>
+                </div>
             </div>
-            <div class="input-group">
-                <label>¿Exonerado de parafiscales? (Art. 114-1 E.T.)</label>
-                <div class="toggle-group">
-                    <button class="toggle-btn active" data-value="true" onclick="setExonerado(true)">Sí</button>
-                    <button class="toggle-btn" data-value="false" onclick="setExonerado(false)">No</button>
+
+            <div class="card">
+                <h2>📊 Resumen del Mes</h2>
+                <div class="stats-grid">
+                    <div class="stat-box">
+                        <div class="stat-value" id="statWorked">0</div>
+                        <div class="stat-label">Trabajados</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="statAbsent">0</div>
+                        <div class="stat-label">Ausencias</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="statVacation">0</div>
+                        <div class="stat-label">Vacaciones</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="statSick">0</div>
+                        <div class="stat-label">Incapacidad</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="statHoliday">0</div>
+                        <div class="stat-label">Festivos</div>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="card">
-            <h2>👤 Pago al Trabajador</h2>
-            <div class="row">
-                <span class="label">Salario mínimo</span>
-                <span class="value" id="salarioBase">$0</span>
+        <!-- Summary Section -->
+        <div id="section-summary" class="section">
+            <div class="card">
+                <h2>👤 Pago al Trabajador - <span id="summaryMonth"></span></h2>
+                <div class="row">
+                    <span class="label">Días a pagar</span>
+                    <span class="value" id="diasPagar">0</span>
+                </div>
+                <div class="row">
+                    <span class="label">Salario proporcional</span>
+                    <span class="value" id="salarioBase">$0</span>
+                </div>
+                <div class="row">
+                    <span class="label">Auxilio de transporte</span>
+                    <span class="value" id="auxTransporte">$0</span>
+                </div>
+                <div class="row">
+                    <span class="label">(-) Aporte salud (4%)</span>
+                    <span class="value" id="descSalud">$0</span>
+                </div>
+                <div class="row">
+                    <span class="label">(-) Aporte pensión (4%)</span>
+                    <span class="value" id="descPension">$0</span>
+                </div>
+                <div class="row total">
+                    <span class="label">Neto a pagar</span>
+                    <span class="value" id="netoPagar">$0</span>
+                </div>
             </div>
-            <div class="row">
-                <span class="label">Auxilio de transporte</span>
-                <span class="value" id="auxTransporte">$0</span>
+
+            <div class="card">
+                <h2>🏢 Costo Total Empleador</h2>
+                <div class="row">
+                    <span class="label">Salario + Aux. transporte</span>
+                    <span class="value" id="totalDevengado">$0</span>
+                </div>
+                <div class="row">
+                    <span class="label">Prestaciones sociales</span>
+                    <span class="value" id="prestaciones">$0</span>
+                </div>
+                <div class="row">
+                    <span class="label">Seguridad social</span>
+                    <span class="value" id="segSocial">$0</span>
+                </div>
+                <div class="row">
+                    <span class="label">Parafiscales</span>
+                    <span class="value" id="parafiscales">$0</span>
+                </div>
+                <div class="row total">
+                    <span class="label">Costo total</span>
+                    <span class="value" id="costoTotal">$0</span>
+                </div>
             </div>
-            <div class="row">
-                <span class="label">(-) Aporte salud (4%)</span>
-                <span class="value" id="descSalud">$0</span>
+
+            <div class="card">
+                <h2>📋 Detalle Prestaciones</h2>
+                <div class="row">
+                    <span class="label">Prima de servicios (8.33%)</span>
+                    <span class="value" id="prima">$0</span>
+                </div>
+                <div class="row">
+                    <span class="label">Cesantías (8.33%)</span>
+                    <span class="value" id="cesantias">$0</span>
+                </div>
+                <div class="row">
+                    <span class="label">Intereses cesantías (1%)</span>
+                    <span class="value" id="intCesantias">$0</span>
+                </div>
+                <div class="row">
+                    <span class="label">Vacaciones (4.17%)</span>
+                    <span class="value" id="vacaciones">$0</span>
+                </div>
             </div>
-            <div class="row">
-                <span class="label">(-) Aporte pensión (4%)</span>
-                <span class="value" id="descPension">$0</span>
+            
+            <button class="btn btn-primary" onclick="saveMonth()" style="width:100%;margin-top:8px;">
+                💾 Guardar Liquidación del Mes
+            </button>
+        </div>
+
+        <!-- History Section -->
+        <div id="section-history" class="section">
+            <div class="card">
+                <h2>📊 Historial de Pagos</h2>
+                <div id="historyList"></div>
             </div>
-            <div class="row total">
-                <span class="label">Neto a pagar</span>
-                <span class="value" id="netoPagar">$0</span>
+            
+            <div class="card">
+                <h2>📈 Acumulados del Año</h2>
+                <div class="row">
+                    <span class="label">Total pagado al trabajador</span>
+                    <span class="value" id="totalPagado">$0</span>
+                </div>
+                <div class="row">
+                    <span class="label">Total costo empleador</span>
+                    <span class="value" id="totalCosto">$0</span>
+                </div>
+                <div class="row">
+                    <span class="label">Días trabajados</span>
+                    <span class="value" id="totalDias">0</span>
+                </div>
+                <div class="row">
+                    <span class="label">Vacaciones tomadas</span>
+                    <span class="value" id="totalVacaciones">0 días</span>
+                </div>
             </div>
         </div>
 
-        <div class="card">
-            <h2>🏢 Costo Empleador</h2>
-            <div class="row">
-                <span class="label">Salario + Aux. transporte</span>
-                <span class="value" id="totalDevengado">$0</span>
+        <!-- Settings Section -->
+        <div id="section-settings" class="section">
+            <div class="card">
+                <h2>👤 Datos del Empleado</h2>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Nombre completo</label>
+                        <input type="text" id="empNombre" placeholder="Nombre del empleado">
+                    </div>
+                </div>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Cédula</label>
+                        <input type="text" id="empCedula" placeholder="Número de cédula">
+                    </div>
+                    <div class="input-group">
+                        <label>Fecha de ingreso</label>
+                        <input type="date" id="empFechaIngreso">
+                    </div>
+                </div>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Cargo</label>
+                        <input type="text" id="empCargo" placeholder="Cargo o posición">
+                    </div>
+                </div>
             </div>
-            <div class="row">
-                <span class="label">Prestaciones sociales</span>
-                <span class="value" id="prestaciones">$0</span>
-            </div>
-            <div class="row">
-                <span class="label">Seguridad social</span>
-                <span class="value" id="segSocial">$0</span>
-            </div>
-            <div class="row">
-                <span class="label">Parafiscales</span>
-                <span class="value" id="parafiscales">$0</span>
-            </div>
-            <div class="row total">
-                <span class="label">Costo total empleador</span>
-                <span class="value" id="costoTotal">$0</span>
-            </div>
-            <div class="info">
-                💡 Este es el costo real mensual de contratar un trabajador con salario mínimo.
-            </div>
-        </div>
 
-        <div class="card">
-            <h2>📊 Detalle Prestaciones (provisión mensual)</h2>
-            <div class="row">
-                <span class="label">Prima de servicios (8.33%)</span>
-                <span class="value" id="prima">$0</span>
+            <div class="card">
+                <h2>⚙️ Configuración de Nómina</h2>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>Salario mensual</label>
+                        <input type="number" id="salarioConfig" value="1750905">
+                    </div>
+                    <div class="input-group">
+                        <label>Auxilio de transporte</label>
+                        <input type="number" id="auxilioConfig" value="249095">
+                    </div>
+                </div>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>¿Exonerado de parafiscales?</label>
+                        <select id="exoneradoConfig">
+                            <option value="true">Sí (Art. 114-1 E.T.)</option>
+                            <option value="false">No</option>
+                        </select>
+                    </div>
+                    <div class="input-group">
+                        <label>Riesgo ARL</label>
+                        <select id="arlConfig">
+                            <option value="0.00522">Nivel I (0.522%)</option>
+                            <option value="0.01044">Nivel II (1.044%)</option>
+                            <option value="0.02436">Nivel III (2.436%)</option>
+                            <option value="0.0435">Nivel IV (4.35%)</option>
+                            <option value="0.0696">Nivel V (6.96%)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="info-box">
+                    💡 Salario mínimo 2026: $1,750,905 | Auxilio transporte: $249,095
+                </div>
+                <button class="btn btn-primary" onclick="saveSettings()" style="margin-top:16px;">
+                    💾 Guardar Configuración
+                </button>
             </div>
-            <div class="row">
-                <span class="label">Cesantías (8.33%)</span>
-                <span class="value" id="cesantias">$0</span>
-            </div>
-            <div class="row">
-                <span class="label">Intereses cesantías (1%)</span>
-                <span class="value" id="intCesantias">$0</span>
-            </div>
-            <div class="row">
-                <span class="label">Vacaciones (4.17%)</span>
-                <span class="value" id="vacaciones">$0</span>
+            
+            <div class="card">
+                <h2>🗑️ Datos</h2>
+                <p style="color:#8892b0;font-size:0.85rem;margin-bottom:12px;">Los datos se guardan en tu navegador (localStorage).</p>
+                <button class="btn btn-secondary" onclick="exportData()">📤 Exportar datos</button>
+                <button class="btn btn-danger" onclick="clearAllData()" style="margin-left:8px;">🗑️ Borrar todo</button>
             </div>
         </div>
 
         <footer>
-            Datos según Gerencie.com • Salario Mínimo 2026: $1,750,905
+            Datos según Gerencie.com • Salario Mínimo 2026
         </footer>
     </div>
 
     <script>
-        const SALARIO_MINIMO = 1750905;
-        const AUXILIO_TRANSPORTE = 249095;
-        let exonerado = true;
+        // Constants
+        const MONTHS = ['Enero', 'Febrero', 'Marzo', 'Abril', 'Mayo', 'Junio', 
+                       'Julio', 'Agosto', 'Septiembre', 'Octubre', 'Noviembre', 'Diciembre'];
+        const DAYS = ['Dom', 'Lun', 'Mar', 'Mié', 'Jue', 'Vie', 'Sáb'];
+        
+        // State
+        let currentDate = new Date();
+        let currentMonth = currentDate.getMonth();
+        let currentYear = currentDate.getFullYear();
+        let selectedType = 'worked';
+        let attendance = {};
+        let history = [];
+        let settings = {
+            nombre: '',
+            cedula: '',
+            fechaIngreso: '',
+            cargo: '',
+            salario: 1750905,
+            auxilio: 249095,
+            exonerado: true,
+            arl: 0.00522
+        };
 
-        function formatCurrency(value) {
-            return '$' + Math.round(value).toLocaleString('es-CO');
+        // Initialize
+        function init() {
+            loadData();
+            renderCalendar();
+            updateStats();
+            updateSummary();
+            renderHistory();
+            loadSettingsUI();
         }
 
-        function setExonerado(value) {
-            exonerado = value;
-            document.querySelectorAll('.toggle-btn').forEach(btn => {
-                btn.classList.toggle('active', btn.dataset.value === String(value));
+        // Data persistence
+        function loadData() {
+            const savedAttendance = localStorage.getItem('nomina_attendance');
+            const savedHistory = localStorage.getItem('nomina_history');
+            const savedSettings = localStorage.getItem('nomina_settings');
+            
+            if (savedAttendance) attendance = JSON.parse(savedAttendance);
+            if (savedHistory) history = JSON.parse(savedHistory);
+            if (savedSettings) settings = { ...settings, ...JSON.parse(savedSettings) };
+        }
+
+        function saveData() {
+            localStorage.setItem('nomina_attendance', JSON.stringify(attendance));
+            localStorage.setItem('nomina_history', JSON.stringify(history));
+            localStorage.setItem('nomina_settings', JSON.stringify(settings));
+        }
+
+        // Navigation
+        function showSection(section) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            document.getElementById(`section-${section}`).classList.add('active');
+            event.target.classList.add('active');
+            
+            if (section === 'summary') updateSummary();
+            if (section === 'history') renderHistory();
+        }
+
+        function changeMonth(delta) {
+            currentMonth += delta;
+            if (currentMonth > 11) { currentMonth = 0; currentYear++; }
+            if (currentMonth < 0) { currentMonth = 11; currentYear--; }
+            renderCalendar();
+            updateStats();
+            updateSummary();
+        }
+
+        // Calendar
+        function renderCalendar() {
+            const grid = document.getElementById('calendarGrid');
+            grid.innerHTML = '';
+            
+            // Header
+            DAYS.forEach(day => {
+                grid.innerHTML += `<div class="calendar-day-header">${day}</div>`;
             });
-            calcular();
+            
+            // Days
+            const firstDay = new Date(currentYear, currentMonth, 1).getDay();
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            const today = new Date();
+            
+            // Empty cells
+            for (let i = 0; i < firstDay; i++) {
+                grid.innerHTML += `<div class="calendar-day empty"></div>`;
+            }
+            
+            // Day cells
+            for (let day = 1; day <= daysInMonth; day++) {
+                const dateKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+                const dayDate = new Date(currentYear, currentMonth, day);
+                const isToday = dayDate.toDateString() === today.toDateString();
+                const isFuture = dayDate > today;
+                const type = attendance[dateKey] || '';
+                
+                let classes = 'calendar-day';
+                if (isToday) classes += ' today';
+                if (isFuture) classes += ' future';
+                if (type) classes += ` ${type}`;
+                
+                const indicator = type ? getIndicator(type) : '';
+                
+                grid.innerHTML += `
+                    <div class="${classes}" onclick="toggleDay('${dateKey}', ${isFuture})" data-date="${dateKey}">
+                        ${day}
+                        ${indicator ? `<span class="indicator">${indicator}</span>` : ''}
+                    </div>
+                `;
+            }
+            
+            document.getElementById('monthYear').textContent = `${MONTHS[currentMonth]} ${currentYear}`;
         }
 
-        function calcular() {
-            const dias = parseInt(document.getElementById('diasTrabajados').value) || 30;
-            const factor = dias / 30;
+        function getIndicator(type) {
+            const indicators = {
+                worked: '✓',
+                absent: '✗',
+                vacation: '🏖',
+                sick: '🏥',
+                holiday: '🎉',
+                half: '½'
+            };
+            return indicators[type] || '';
+        }
 
-            // Valores proporcionales
-            const salario = SALARIO_MINIMO * factor;
-            const auxilio = AUXILIO_TRANSPORTE * factor;
+        function selectType(type) {
+            selectedType = type;
+            document.querySelectorAll('.legend-item').forEach(item => {
+                item.classList.toggle('selected', item.dataset.type === type);
+            });
+        }
+
+        function toggleDay(dateKey, isFuture) {
+            if (isFuture) return;
+            
+            if (attendance[dateKey] === selectedType) {
+                delete attendance[dateKey];
+            } else {
+                attendance[dateKey] = selectedType;
+            }
+            
+            saveData();
+            renderCalendar();
+            updateStats();
+        }
+
+        // Stats
+        function updateStats() {
+            const monthKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+            const counts = { worked: 0, absent: 0, vacation: 0, sick: 0, holiday: 0, half: 0 };
+            
+            Object.entries(attendance).forEach(([date, type]) => {
+                if (date.startsWith(monthKey)) {
+                    counts[type] = (counts[type] || 0) + 1;
+                }
+            });
+            
+            document.getElementById('statWorked').textContent = counts.worked + (counts.half * 0.5);
+            document.getElementById('statAbsent').textContent = counts.absent + (counts.half * 0.5);
+            document.getElementById('statVacation').textContent = counts.vacation;
+            document.getElementById('statSick').textContent = counts.sick;
+            document.getElementById('statHoliday').textContent = counts.holiday;
+        }
+
+        // Summary calculation
+        function updateSummary() {
+            const monthKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+            document.getElementById('summaryMonth').textContent = `${MONTHS[currentMonth]} ${currentYear}`;
+            
+            // Count paid days
+            let paidDays = 0;
+            Object.entries(attendance).forEach(([date, type]) => {
+                if (date.startsWith(monthKey)) {
+                    if (type === 'worked' || type === 'holiday' || type === 'vacation') paidDays += 1;
+                    if (type === 'half') paidDays += 0.5;
+                    if (type === 'sick') paidDays += 0.6667; // EPS paga ~66.67%
+                }
+            });
+            
+            const factor = paidDays / 30;
+            const salario = settings.salario * factor;
+            const auxilio = settings.auxilio * factor;
             const totalDevengado = salario + auxilio;
-
-            // Descuentos trabajador (sobre salario, no auxilio)
+            
+            // Worker deductions
             const descSalud = salario * 0.04;
             const descPension = salario * 0.04;
             const netoPagar = totalDevengado - descSalud - descPension;
-
-            // Prestaciones sociales (sobre salario + auxilio)
+            
+            // Benefits
             const prima = totalDevengado * 0.0833;
             const cesantias = totalDevengado * 0.0833;
             const intCesantias = cesantias * 0.12;
             const vacaciones = salario * 0.0417;
             const totalPrestaciones = prima + cesantias + intCesantias + vacaciones;
-
-            // Seguridad social empleador
+            
+            // Employer social security
             const aportesPension = salario * 0.12;
-            const aportesARL = salario * 0.00522;
-            const aportesSalud = exonerado ? 0 : salario * 0.085;
+            const aportesARL = salario * settings.arl;
+            const aportesSalud = settings.exonerado ? 0 : salario * 0.085;
             const totalSegSocial = aportesPension + aportesARL + aportesSalud;
-
+            
             // Parafiscales
             const cajaComp = salario * 0.04;
-            const sena = exonerado ? 0 : salario * 0.02;
-            const icbf = exonerado ? 0 : salario * 0.03;
+            const sena = settings.exonerado ? 0 : salario * 0.02;
+            const icbf = settings.exonerado ? 0 : salario * 0.03;
             const totalParafiscales = cajaComp + sena + icbf;
-
-            // Costo total
+            
             const costoTotal = totalDevengado + totalPrestaciones + totalSegSocial + totalParafiscales;
-
-            // Actualizar UI
+            
+            // Update UI
+            document.getElementById('diasPagar').textContent = paidDays.toFixed(1);
             document.getElementById('salarioBase').textContent = formatCurrency(salario);
             document.getElementById('auxTransporte').textContent = formatCurrency(auxilio);
             document.getElementById('descSalud').textContent = '-' + formatCurrency(descSalud);
             document.getElementById('descPension').textContent = '-' + formatCurrency(descPension);
             document.getElementById('netoPagar').textContent = formatCurrency(netoPagar);
-
+            
             document.getElementById('totalDevengado').textContent = formatCurrency(totalDevengado);
             document.getElementById('prestaciones').textContent = formatCurrency(totalPrestaciones);
             document.getElementById('segSocial').textContent = formatCurrency(totalSegSocial);
             document.getElementById('parafiscales').textContent = formatCurrency(totalParafiscales);
             document.getElementById('costoTotal').textContent = formatCurrency(costoTotal);
-
+            
             document.getElementById('prima').textContent = formatCurrency(prima);
             document.getElementById('cesantias').textContent = formatCurrency(cesantias);
             document.getElementById('intCesantias').textContent = formatCurrency(intCesantias);
             document.getElementById('vacaciones').textContent = formatCurrency(vacaciones);
+            
+            return { paidDays, netoPagar, costoTotal };
         }
 
-        document.getElementById('diasTrabajados').addEventListener('input', calcular);
-        calcular();
+        function formatCurrency(value) {
+            return '$' + Math.round(value).toLocaleString('es-CO');
+        }
+
+        // History
+        function saveMonth() {
+            const { paidDays, netoPagar, costoTotal } = updateSummary();
+            const monthKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+            
+            // Remove existing entry for this month
+            history = history.filter(h => h.month !== monthKey);
+            
+            history.push({
+                month: monthKey,
+                monthName: `${MONTHS[currentMonth]} ${currentYear}`,
+                paidDays,
+                netoPagar,
+                costoTotal,
+                savedAt: new Date().toISOString()
+            });
+            
+            history.sort((a, b) => b.month.localeCompare(a.month));
+            saveData();
+            alert('✅ Liquidación guardada');
+            renderHistory();
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('historyList');
+            
+            if (history.length === 0) {
+                list.innerHTML = `
+                    <div class="empty-state">
+                        <div class="icon">📭</div>
+                        <p>No hay liquidaciones guardadas</p>
+                    </div>
+                `;
+                document.getElementById('totalPagado').textContent = '$0';
+                document.getElementById('totalCosto').textContent = '$0';
+                document.getElementById('totalDias').textContent = '0';
+                document.getElementById('totalVacaciones').textContent = '0 días';
+                return;
+            }
+            
+            list.innerHTML = history.map(h => `
+                <div class="history-item">
+                    <div>
+                        <div class="history-month">${h.monthName}</div>
+                        <div class="history-details">${h.paidDays} días trabajados</div>
+                    </div>
+                    <div class="history-amount">${formatCurrency(h.netoPagar)}</div>
+                </div>
+            `).join('');
+            
+            // Totals
+            const totals = history.reduce((acc, h) => ({
+                pagado: acc.pagado + h.netoPagar,
+                costo: acc.costo + h.costoTotal,
+                dias: acc.dias + h.paidDays
+            }), { pagado: 0, costo: 0, dias: 0 });
+            
+            // Count vacation days
+            let vacationDays = 0;
+            Object.entries(attendance).forEach(([date, type]) => {
+                if (type === 'vacation') vacationDays++;
+            });
+            
+            document.getElementById('totalPagado').textContent = formatCurrency(totals.pagado);
+            document.getElementById('totalCosto').textContent = formatCurrency(totals.costo);
+            document.getElementById('totalDias').textContent = totals.dias.toFixed(1);
+            document.getElementById('totalVacaciones').textContent = `${vacationDays} días`;
+        }
+
+        // Settings
+        function loadSettingsUI() {
+            document.getElementById('empNombre').value = settings.nombre || '';
+            document.getElementById('empCedula').value = settings.cedula || '';
+            document.getElementById('empFechaIngreso').value = settings.fechaIngreso || '';
+            document.getElementById('empCargo').value = settings.cargo || '';
+            document.getElementById('salarioConfig').value = settings.salario;
+            document.getElementById('auxilioConfig').value = settings.auxilio;
+            document.getElementById('exoneradoConfig').value = String(settings.exonerado);
+            document.getElementById('arlConfig').value = settings.arl;
+        }
+
+        function saveSettings() {
+            settings.nombre = document.getElementById('empNombre').value;
+            settings.cedula = document.getElementById('empCedula').value;
+            settings.fechaIngreso = document.getElementById('empFechaIngreso').value;
+            settings.cargo = document.getElementById('empCargo').value;
+            settings.salario = parseInt(document.getElementById('salarioConfig').value) || 1750905;
+            settings.auxilio = parseInt(document.getElementById('auxilioConfig').value) || 249095;
+            settings.exonerado = document.getElementById('exoneradoConfig').value === 'true';
+            settings.arl = parseFloat(document.getElementById('arlConfig').value);
+            
+            saveData();
+            alert('✅ Configuración guardada');
+            updateSummary();
+        }
+
+        function exportData() {
+            const data = {
+                settings,
+                attendance,
+                history,
+                exportedAt: new Date().toISOString()
+            };
+            
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `nomina-backup-${new Date().toISOString().split('T')[0]}.json`;
+            a.click();
+        }
+
+        function clearAllData() {
+            if (confirm('⚠️ ¿Estás seguro? Se borrarán todos los datos.')) {
+                localStorage.removeItem('nomina_attendance');
+                localStorage.removeItem('nomina_history');
+                localStorage.removeItem('nomina_settings');
+                location.reload();
+            }
+        }
+
+        // Init
+        init();
     </script>
 </body>
 </html>
