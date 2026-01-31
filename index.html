@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora Nómina Colombia 2026</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #fff;
+        }
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        h1 {
+            text-align: center;
+            margin-bottom: 10px;
+            font-size: 1.8rem;
+        }
+        .subtitle {
+            text-align: center;
+            color: #8892b0;
+            margin-bottom: 30px;
+        }
+        .card {
+            background: rgba(255,255,255,0.05);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .card h2 {
+            font-size: 1.1rem;
+            color: #64ffda;
+            margin-bottom: 16px;
+        }
+        .input-group {
+            margin-bottom: 16px;
+        }
+        label {
+            display: block;
+            margin-bottom: 6px;
+            color: #ccd6f6;
+            font-size: 0.9rem;
+        }
+        input, select {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.05);
+            color: #fff;
+            font-size: 1rem;
+        }
+        input:focus, select:focus {
+            outline: none;
+            border-color: #64ffda;
+        }
+        .row {
+            display: flex;
+            justify-content: space-between;
+            padding: 10px 0;
+            border-bottom: 1px solid rgba(255,255,255,0.1);
+        }
+        .row:last-child { border-bottom: none; }
+        .row .label { color: #8892b0; }
+        .row .value { font-weight: 600; color: #ccd6f6; }
+        .row.total { 
+            margin-top: 10px;
+            padding-top: 16px;
+            border-top: 2px solid #64ffda;
+            border-bottom: none;
+        }
+        .row.total .label, .row.total .value {
+            color: #64ffda;
+            font-size: 1.1rem;
+        }
+        .info {
+            background: rgba(100, 255, 218, 0.1);
+            border-left: 3px solid #64ffda;
+            padding: 12px 16px;
+            margin-top: 16px;
+            border-radius: 0 8px 8px 0;
+            font-size: 0.85rem;
+            color: #8892b0;
+        }
+        .toggle-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .toggle-btn {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid rgba(255,255,255,0.2);
+            border-radius: 8px;
+            background: transparent;
+            color: #8892b0;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .toggle-btn.active {
+            background: #64ffda;
+            color: #1a1a2e;
+            border-color: #64ffda;
+        }
+        footer {
+            text-align: center;
+            margin-top: 30px;
+            color: #8892b0;
+            font-size: 0.8rem;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>💰 Calculadora Nómina</h1>
+        <p class="subtitle">Colombia 2026 - Salario Mínimo</p>
+
+        <div class="card">
+            <h2>⚙️ Configuración</h2>
+            <div class="input-group">
+                <label>Días trabajados en el mes</label>
+                <input type="number" id="diasTrabajados" value="30" min="1" max="30">
+            </div>
+            <div class="input-group">
+                <label>¿Exonerado de parafiscales? (Art. 114-1 E.T.)</label>
+                <div class="toggle-group">
+                    <button class="toggle-btn active" data-value="true" onclick="setExonerado(true)">Sí</button>
+                    <button class="toggle-btn" data-value="false" onclick="setExonerado(false)">No</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>👤 Pago al Trabajador</h2>
+            <div class="row">
+                <span class="label">Salario mínimo</span>
+                <span class="value" id="salarioBase">$0</span>
+            </div>
+            <div class="row">
+                <span class="label">Auxilio de transporte</span>
+                <span class="value" id="auxTransporte">$0</span>
+            </div>
+            <div class="row">
+                <span class="label">(-) Aporte salud (4%)</span>
+                <span class="value" id="descSalud">$0</span>
+            </div>
+            <div class="row">
+                <span class="label">(-) Aporte pensión (4%)</span>
+                <span class="value" id="descPension">$0</span>
+            </div>
+            <div class="row total">
+                <span class="label">Neto a pagar</span>
+                <span class="value" id="netoPagar">$0</span>
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>🏢 Costo Empleador</h2>
+            <div class="row">
+                <span class="label">Salario + Aux. transporte</span>
+                <span class="value" id="totalDevengado">$0</span>
+            </div>
+            <div class="row">
+                <span class="label">Prestaciones sociales</span>
+                <span class="value" id="prestaciones">$0</span>
+            </div>
+            <div class="row">
+                <span class="label">Seguridad social</span>
+                <span class="value" id="segSocial">$0</span>
+            </div>
+            <div class="row">
+                <span class="label">Parafiscales</span>
+                <span class="value" id="parafiscales">$0</span>
+            </div>
+            <div class="row total">
+                <span class="label">Costo total empleador</span>
+                <span class="value" id="costoTotal">$0</span>
+            </div>
+            <div class="info">
+                💡 Este es el costo real mensual de contratar un trabajador con salario mínimo.
+            </div>
+        </div>
+
+        <div class="card">
+            <h2>📊 Detalle Prestaciones (provisión mensual)</h2>
+            <div class="row">
+                <span class="label">Prima de servicios (8.33%)</span>
+                <span class="value" id="prima">$0</span>
+            </div>
+            <div class="row">
+                <span class="label">Cesantías (8.33%)</span>
+                <span class="value" id="cesantias">$0</span>
+            </div>
+            <div class="row">
+                <span class="label">Intereses cesantías (1%)</span>
+                <span class="value" id="intCesantias">$0</span>
+            </div>
+            <div class="row">
+                <span class="label">Vacaciones (4.17%)</span>
+                <span class="value" id="vacaciones">$0</span>
+            </div>
+        </div>
+
+        <footer>
+            Datos según Gerencie.com • Salario Mínimo 2026: $1,750,905
+        </footer>
+    </div>
+
+    <script>
+        const SALARIO_MINIMO = 1750905;
+        const AUXILIO_TRANSPORTE = 249095;
+        let exonerado = true;
+
+        function formatCurrency(value) {
+            return '$' + Math.round(value).toLocaleString('es-CO');
+        }
+
+        function setExonerado(value) {
+            exonerado = value;
+            document.querySelectorAll('.toggle-btn').forEach(btn => {
+                btn.classList.toggle('active', btn.dataset.value === String(value));
+            });
+            calcular();
+        }
+
+        function calcular() {
+            const dias = parseInt(document.getElementById('diasTrabajados').value) || 30;
+            const factor = dias / 30;
+
+            // Valores proporcionales
+            const salario = SALARIO_MINIMO * factor;
+            const auxilio = AUXILIO_TRANSPORTE * factor;
+            const totalDevengado = salario + auxilio;
+
+            // Descuentos trabajador (sobre salario, no auxilio)
+            const descSalud = salario * 0.04;
+            const descPension = salario * 0.04;
+            const netoPagar = totalDevengado - descSalud - descPension;
+
+            // Prestaciones sociales (sobre salario + auxilio)
+            const prima = totalDevengado * 0.0833;
+            const cesantias = totalDevengado * 0.0833;
+            const intCesantias = cesantias * 0.12;
+            const vacaciones = salario * 0.0417;
+            const totalPrestaciones = prima + cesantias + intCesantias + vacaciones;
+
+            // Seguridad social empleador
+            const aportesPension = salario * 0.12;
+            const aportesARL = salario * 0.00522;
+            const aportesSalud = exonerado ? 0 : salario * 0.085;
+            const totalSegSocial = aportesPension + aportesARL + aportesSalud;
+
+            // Parafiscales
+            const cajaComp = salario * 0.04;
+            const sena = exonerado ? 0 : salario * 0.02;
+            const icbf = exonerado ? 0 : salario * 0.03;
+            const totalParafiscales = cajaComp + sena + icbf;
+
+            // Costo total
+            const costoTotal = totalDevengado + totalPrestaciones + totalSegSocial + totalParafiscales;
+
+            // Actualizar UI
+            document.getElementById('salarioBase').textContent = formatCurrency(salario);
+            document.getElementById('auxTransporte').textContent = formatCurrency(auxilio);
+            document.getElementById('descSalud').textContent = '-' + formatCurrency(descSalud);
+            document.getElementById('descPension').textContent = '-' + formatCurrency(descPension);
+            document.getElementById('netoPagar').textContent = formatCurrency(netoPagar);
+
+            document.getElementById('totalDevengado').textContent = formatCurrency(totalDevengado);
+            document.getElementById('prestaciones').textContent = formatCurrency(totalPrestaciones);
+            document.getElementById('segSocial').textContent = formatCurrency(totalSegSocial);
+            document.getElementById('parafiscales').textContent = formatCurrency(totalParafiscales);
+            document.getElementById('costoTotal').textContent = formatCurrency(costoTotal);
+
+            document.getElementById('prima').textContent = formatCurrency(prima);
+            document.getElementById('cesantias').textContent = formatCurrency(cesantias);
+            document.getElementById('intCesantias').textContent = formatCurrency(intCesantias);
+            document.getElementById('vacaciones').textContent = formatCurrency(vacaciones);
+        }
+
+        document.getElementById('diasTrabajados').addEventListener('input', calcular);
+        calcular();
+    </script>
+</body>
+</html>
