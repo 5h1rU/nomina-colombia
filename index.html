@@ -46,16 +46,6 @@
         }
         .card h2 { font-size: 1rem; color: #64ffda; margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
         
-        .employee-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            flex-wrap: wrap;
-            gap: 12px;
-        }
-        .employee-name { font-size: 1.3rem; font-weight: 600; }
-        .employee-since { color: #8892b0; font-size: 0.85rem; }
-        
         .input-row { display: flex; gap: 12px; flex-wrap: wrap; }
         .input-group { flex: 1; min-width: 200px; margin-bottom: 12px; }
         .input-group.small { min-width: 120px; flex: 0.5; }
@@ -91,6 +81,8 @@
             justify-content: space-between;
             align-items: center;
             margin-bottom: 16px;
+            flex-wrap: wrap;
+            gap: 12px;
         }
         .calendar-nav { display: flex; gap: 8px; align-items: center; }
         .calendar-nav button {
@@ -103,6 +95,24 @@
         }
         .calendar-nav button:hover { border-color: #64ffda; color: #64ffda; }
         .month-year { font-size: 1.1rem; font-weight: 600; min-width: 160px; text-align: center; }
+        
+        .quincena-toggle {
+            display: flex;
+            gap: 4px;
+            background: rgba(0,0,0,0.2);
+            padding: 4px;
+            border-radius: 8px;
+        }
+        .quincena-btn {
+            padding: 6px 12px;
+            border: none;
+            border-radius: 6px;
+            background: transparent;
+            color: #8892b0;
+            cursor: pointer;
+            font-size: 0.8rem;
+        }
+        .quincena-btn.active { background: #64ffda; color: #1a1a2e; }
         
         .calendar-grid {
             display: grid;
@@ -134,6 +144,7 @@
         .calendar-day.empty:hover { border-color: transparent; }
         .calendar-day.today { border-color: #64ffda; }
         .calendar-day.future { opacity: 0.4; cursor: not-allowed; }
+        .calendar-day.outside-quincena { opacity: 0.3; }
         
         .calendar-day.worked { background: #2ecc71; color: #fff; }
         .calendar-day.absent { background: #e74c3c; color: #fff; }
@@ -141,6 +152,7 @@
         .calendar-day.sick { background: #9b59b6; color: #fff; }
         .calendar-day.holiday { background: #f39c12; color: #fff; }
         .calendar-day.half { background: linear-gradient(135deg, #2ecc71 50%, #e74c3c 50%); color: #fff; }
+        .calendar-day.sunday { color: #ff6b6b; }
         
         .calendar-day .indicator {
             font-size: 0.6rem;
@@ -177,17 +189,17 @@
         /* Stats */
         .stats-grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
-            gap: 12px;
+            grid-template-columns: repeat(auto-fit, minmax(80px, 1fr));
+            gap: 10px;
         }
         .stat-box {
             background: rgba(255,255,255,0.05);
             border-radius: 12px;
-            padding: 16px;
+            padding: 12px;
             text-align: center;
         }
-        .stat-value { font-size: 1.5rem; font-weight: 700; color: #64ffda; }
-        .stat-label { font-size: 0.75rem; color: #8892b0; margin-top: 4px; }
+        .stat-value { font-size: 1.3rem; font-weight: 700; color: #64ffda; }
+        .stat-label { font-size: 0.7rem; color: #8892b0; margin-top: 4px; }
         
         /* Summary rows */
         .row {
@@ -204,6 +216,7 @@
             border-top: 2px solid #64ffda; border-bottom: none;
         }
         .row.total .label, .row.total .value { color: #64ffda; font-size: 1.05rem; }
+        .row.highlight { background: rgba(100, 255, 218, 0.1); margin: 0 -20px; padding: 10px 20px; }
         
         /* History */
         .history-item {
@@ -249,6 +262,7 @@
         @media (max-width: 500px) {
             .calendar-day { font-size: 0.75rem; }
             .legend { justify-content: center; }
+            .stats-grid { grid-template-columns: repeat(3, 1fr); }
         }
     </style>
 </head>
@@ -261,14 +275,19 @@
             <button class="tab active" onclick="showSection('calendar')">📅 Asistencia</button>
             <button class="tab" onclick="showSection('summary')">💰 Liquidación</button>
             <button class="tab" onclick="showSection('history')">📊 Historial</button>
-            <button class="tab" onclick="showSection('settings')">⚙️ Configuración</button>
+            <button class="tab" onclick="showSection('settings')">⚙️ Config</button>
         </div>
 
         <!-- Calendar Section -->
         <div id="section-calendar" class="section active">
             <div class="card">
                 <div class="calendar-header">
-                    <h2>📅 Registro de Asistencia</h2>
+                    <h2 style="margin:0">📅 Asistencia</h2>
+                    <div class="quincena-toggle">
+                        <button class="quincena-btn active" onclick="setQuincena('all')">Mes</button>
+                        <button class="quincena-btn" onclick="setQuincena(1)">Q1 (1-15)</button>
+                        <button class="quincena-btn" onclick="setQuincena(2)">Q2 (16-fin)</button>
+                    </div>
                     <div class="calendar-nav">
                         <button onclick="changeMonth(-1)">←</button>
                         <span class="month-year" id="monthYear"></span>
@@ -301,7 +320,7 @@
             </div>
 
             <div class="card">
-                <h2>📊 Resumen del Mes</h2>
+                <h2>📊 Resumen <span id="quincenaLabel">del Mes</span></h2>
                 <div class="stats-grid">
                     <div class="stat-box">
                         <div class="stat-value" id="statWorked">0</div>
@@ -323,6 +342,10 @@
                         <div class="stat-value" id="statHoliday">0</div>
                         <div class="stat-label">Festivos</div>
                     </div>
+                    <div class="stat-box">
+                        <div class="stat-value" id="statSundays">0</div>
+                        <div class="stat-label">Domingos</div>
+                    </div>
                 </div>
             </div>
         </div>
@@ -330,9 +353,18 @@
         <!-- Summary Section -->
         <div id="section-summary" class="section">
             <div class="card">
-                <h2>👤 Pago al Trabajador - <span id="summaryMonth"></span></h2>
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;">
+                    <h2 style="margin:0">💰 Liquidación</h2>
+                    <div class="quincena-toggle">
+                        <button class="quincena-btn summary-q active" onclick="setSummaryQuincena('all')">Mes</button>
+                        <button class="quincena-btn summary-q" onclick="setSummaryQuincena(1)">Q1</button>
+                        <button class="quincena-btn summary-q" onclick="setSummaryQuincena(2)">Q2</button>
+                    </div>
+                </div>
+                <p style="color:#64ffda;margin-bottom:16px;" id="summaryPeriod"></p>
+                
                 <div class="row">
-                    <span class="label">Días a pagar</span>
+                    <span class="label">Días a pagar (salario)</span>
                     <span class="value" id="diasPagar">0</span>
                 </div>
                 <div class="row">
@@ -340,8 +372,12 @@
                     <span class="value" id="salarioBase">$0</span>
                 </div>
                 <div class="row">
-                    <span class="label">Auxilio de transporte</span>
+                    <span class="label">Auxilio transporte legal (proporcional)</span>
                     <span class="value" id="auxTransporte">$0</span>
+                </div>
+                <div class="row highlight">
+                    <span class="label">🚌 Bono transporte (<span id="diasBono">0</span> días × $<span id="bonoValor">0</span>)</span>
+                    <span class="value" id="bonoTransporte">$0</span>
                 </div>
                 <div class="row">
                     <span class="label">(-) Aporte salud (4%)</span>
@@ -360,7 +396,7 @@
             <div class="card">
                 <h2>🏢 Costo Total Empleador</h2>
                 <div class="row">
-                    <span class="label">Salario + Aux. transporte</span>
+                    <span class="label">Salario + Auxilios + Bono</span>
                     <span class="value" id="totalDevengado">$0</span>
                 </div>
                 <div class="row">
@@ -382,7 +418,7 @@
             </div>
 
             <div class="card">
-                <h2>📋 Detalle Prestaciones</h2>
+                <h2>📋 Detalle Prestaciones (provisión)</h2>
                 <div class="row">
                     <span class="label">Prima de servicios (8.33%)</span>
                     <span class="value" id="prima">$0</span>
@@ -401,8 +437,8 @@
                 </div>
             </div>
             
-            <button class="btn btn-primary" onclick="saveMonth()" style="width:100%;margin-top:8px;">
-                💾 Guardar Liquidación del Mes
+            <button class="btn btn-primary" onclick="saveQuincena()" style="width:100%;margin-top:8px;">
+                💾 Guardar Liquidación
             </button>
         </div>
 
@@ -422,6 +458,10 @@
                 <div class="row">
                     <span class="label">Total costo empleador</span>
                     <span class="value" id="totalCosto">$0</span>
+                </div>
+                <div class="row">
+                    <span class="label">Total bono transporte</span>
+                    <span class="value" id="totalBono">$0</span>
                 </div>
                 <div class="row">
                     <span class="label">Días trabajados</span>
@@ -463,17 +503,38 @@
             </div>
 
             <div class="card">
-                <h2>⚙️ Configuración de Nómina</h2>
+                <h2>💵 Configuración de Nómina</h2>
                 <div class="input-row">
                     <div class="input-group">
                         <label>Salario mensual</label>
                         <input type="number" id="salarioConfig" value="1750905">
                     </div>
                     <div class="input-group">
-                        <label>Auxilio de transporte</label>
+                        <label>Auxilio transporte legal (mes)</label>
                         <input type="number" id="auxilioConfig" value="249095">
                     </div>
                 </div>
+                <div class="input-row">
+                    <div class="input-group">
+                        <label>🚌 Bono transporte diario total</label>
+                        <input type="number" id="bonoTotalConfig" value="27100" placeholder="Total diario incluyendo auxilio">
+                    </div>
+                    <div class="input-group">
+                        <label>Días laborales por semana</label>
+                        <select id="diasSemanaConfig">
+                            <option value="5">5 días (Lun-Vie)</option>
+                            <option value="6" selected>6 días (Lun-Sáb)</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="info-box">
+                    💡 Bono transporte = Total diario ($27,100) - Auxilio legal diario ($249,095 ÷ 30)<br>
+                    Se paga solo los días efectivamente trabajados.
+                </div>
+            </div>
+
+            <div class="card">
+                <h2>⚙️ Configuración Legal</h2>
                 <div class="input-row">
                     <div class="input-group">
                         <label>¿Exonerado de parafiscales?</label>
@@ -493,9 +554,6 @@
                         </select>
                     </div>
                 </div>
-                <div class="info-box">
-                    💡 Salario mínimo 2026: $1,750,905 | Auxilio transporte: $249,095
-                </div>
                 <button class="btn btn-primary" onclick="saveSettings()" style="margin-top:16px;">
                     💾 Guardar Configuración
                 </button>
@@ -503,14 +561,14 @@
             
             <div class="card">
                 <h2>🗑️ Datos</h2>
-                <p style="color:#8892b0;font-size:0.85rem;margin-bottom:12px;">Los datos se guardan en tu navegador (localStorage).</p>
-                <button class="btn btn-secondary" onclick="exportData()">📤 Exportar datos</button>
+                <p style="color:#8892b0;font-size:0.85rem;margin-bottom:12px;">Los datos se guardan en tu navegador.</p>
+                <button class="btn btn-secondary" onclick="exportData()">📤 Exportar</button>
                 <button class="btn btn-danger" onclick="clearAllData()" style="margin-left:8px;">🗑️ Borrar todo</button>
             </div>
         </div>
 
         <footer>
-            Datos según Gerencie.com • Salario Mínimo 2026
+            Datos según Gerencie.com • Salario Mínimo 2026: $1,750,905
         </footer>
     </div>
 
@@ -525,6 +583,8 @@
         let currentMonth = currentDate.getMonth();
         let currentYear = currentDate.getFullYear();
         let selectedType = 'worked';
+        let selectedQuincena = 'all'; // 'all', 1, 2
+        let summaryQuincena = 'all';
         let attendance = {};
         let history = [];
         let settings = {
@@ -534,6 +594,8 @@
             cargo: '',
             salario: 1750905,
             auxilio: 249095,
+            bonoTotal: 27100,
+            diasSemana: 6,
             exonerado: true,
             arl: 0.00522
         };
@@ -585,6 +647,39 @@
             updateSummary();
         }
 
+        function setQuincena(q) {
+            selectedQuincena = q;
+            document.querySelectorAll('.quincena-btn:not(.summary-q)').forEach(btn => {
+                btn.classList.toggle('active', 
+                    (q === 'all' && btn.textContent === 'Mes') ||
+                    (q === 1 && btn.textContent.includes('Q1')) ||
+                    (q === 2 && btn.textContent.includes('Q2'))
+                );
+            });
+            const label = q === 'all' ? 'del Mes' : q === 1 ? 'Quincena 1 (1-15)' : 'Quincena 2 (16-fin)';
+            document.getElementById('quincenaLabel').textContent = label;
+            renderCalendar();
+            updateStats();
+        }
+
+        function setSummaryQuincena(q) {
+            summaryQuincena = q;
+            document.querySelectorAll('.summary-q').forEach(btn => {
+                btn.classList.toggle('active', 
+                    (q === 'all' && btn.textContent === 'Mes') ||
+                    (q === 1 && btn.textContent === 'Q1') ||
+                    (q === 2 && btn.textContent === 'Q2')
+                );
+            });
+            updateSummary();
+        }
+
+        function isInQuincena(day, quincena) {
+            if (quincena === 'all') return true;
+            if (quincena === 1) return day >= 1 && day <= 15;
+            return day >= 16;
+        }
+
         // Calendar
         function renderCalendar() {
             const grid = document.getElementById('calendarGrid');
@@ -609,16 +704,21 @@
             for (let day = 1; day <= daysInMonth; day++) {
                 const dateKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                 const dayDate = new Date(currentYear, currentMonth, day);
+                const dayOfWeek = dayDate.getDay();
                 const isToday = dayDate.toDateString() === today.toDateString();
                 const isFuture = dayDate > today;
+                const isSunday = dayOfWeek === 0;
+                const inQuincena = isInQuincena(day, selectedQuincena);
                 const type = attendance[dateKey] || '';
                 
                 let classes = 'calendar-day';
                 if (isToday) classes += ' today';
                 if (isFuture) classes += ' future';
+                if (isSunday && !type) classes += ' sunday';
+                if (!inQuincena) classes += ' outside-quincena';
                 if (type) classes += ` ${type}`;
                 
-                const indicator = type ? getIndicator(type) : '';
+                const indicator = type ? getIndicator(type) : (isSunday ? 'D' : '');
                 
                 grid.innerHTML += `
                     <div class="${classes}" onclick="toggleDay('${dateKey}', ${isFuture})" data-date="${dateKey}">
@@ -667,12 +767,21 @@
         // Stats
         function updateStats() {
             const monthKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
-            const counts = { worked: 0, absent: 0, vacation: 0, sick: 0, holiday: 0, half: 0 };
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+            const counts = { worked: 0, absent: 0, vacation: 0, sick: 0, holiday: 0, half: 0, sundays: 0 };
+            
+            // Count Sundays in selected quincena
+            for (let day = 1; day <= daysInMonth; day++) {
+                if (!isInQuincena(day, selectedQuincena)) continue;
+                const date = new Date(currentYear, currentMonth, day);
+                if (date.getDay() === 0) counts.sundays++;
+            }
             
             Object.entries(attendance).forEach(([date, type]) => {
-                if (date.startsWith(monthKey)) {
-                    counts[type] = (counts[type] || 0) + 1;
-                }
+                if (!date.startsWith(monthKey)) return;
+                const day = parseInt(date.split('-')[2]);
+                if (!isInQuincena(day, selectedQuincena)) return;
+                counts[type] = (counts[type] || 0) + 1;
             });
             
             document.getElementById('statWorked').textContent = counts.worked + (counts.half * 0.5);
@@ -680,63 +789,101 @@
             document.getElementById('statVacation').textContent = counts.vacation;
             document.getElementById('statSick').textContent = counts.sick;
             document.getElementById('statHoliday').textContent = counts.holiday;
+            document.getElementById('statSundays').textContent = counts.sundays;
         }
 
         // Summary calculation
         function updateSummary() {
             const monthKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
-            document.getElementById('summaryMonth').textContent = `${MONTHS[currentMonth]} ${currentYear}`;
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
             
-            // Count paid days
-            let paidDays = 0;
+            // Period label
+            let periodLabel = `${MONTHS[currentMonth]} ${currentYear}`;
+            let daysInPeriod = daysInMonth;
+            if (summaryQuincena === 1) {
+                periodLabel = `${MONTHS[currentMonth]} 1-15, ${currentYear}`;
+                daysInPeriod = 15;
+            } else if (summaryQuincena === 2) {
+                periodLabel = `${MONTHS[currentMonth]} 16-${daysInMonth}, ${currentYear}`;
+                daysInPeriod = daysInMonth - 15;
+            }
+            document.getElementById('summaryPeriod').textContent = periodLabel;
+            
+            // Count days
+            let paidDays = 0; // For salary (worked + holiday + vacation)
+            let workedDays = 0; // For transport bonus (only worked)
+            
             Object.entries(attendance).forEach(([date, type]) => {
-                if (date.startsWith(monthKey)) {
-                    if (type === 'worked' || type === 'holiday' || type === 'vacation') paidDays += 1;
-                    if (type === 'half') paidDays += 0.5;
-                    if (type === 'sick') paidDays += 0.6667; // EPS paga ~66.67%
+                if (!date.startsWith(monthKey)) return;
+                const day = parseInt(date.split('-')[2]);
+                if (!isInQuincena(day, summaryQuincena)) return;
+                
+                if (type === 'worked') {
+                    paidDays += 1;
+                    workedDays += 1;
+                } else if (type === 'holiday' || type === 'vacation') {
+                    paidDays += 1;
+                    // No transport bonus on holidays/vacation
+                } else if (type === 'half') {
+                    paidDays += 0.5;
+                    workedDays += 0.5;
+                } else if (type === 'sick') {
+                    paidDays += 0.6667;
+                    // No transport bonus on sick days
                 }
             });
             
+            // Calculate proportional factor for the period
             const factor = paidDays / 30;
             const salario = settings.salario * factor;
-            const auxilio = settings.auxilio * factor;
-            const totalDevengado = salario + auxilio;
+            const auxilioLegal = settings.auxilio * factor;
             
-            // Worker deductions
+            // Transport bonus: only for worked days
+            const auxilioDiario = settings.auxilio / 30;
+            const bonoDiario = settings.bonoTotal - auxilioDiario;
+            const bonoTransporte = bonoDiario * workedDays;
+            
+            const totalDevengadoBruto = salario + auxilioLegal + bonoTransporte;
+            
+            // Worker deductions (on salary only)
             const descSalud = salario * 0.04;
             const descPension = salario * 0.04;
-            const netoPagar = totalDevengado - descSalud - descPension;
+            const netoPagar = totalDevengadoBruto - descSalud - descPension;
             
-            // Benefits
-            const prima = totalDevengado * 0.0833;
-            const cesantias = totalDevengado * 0.0833;
+            // Benefits (on salary + legal transport, not bonus)
+            const basePresaciones = salario + auxilioLegal;
+            const prima = basePresaciones * 0.0833;
+            const cesantias = basePresaciones * 0.0833;
             const intCesantias = cesantias * 0.12;
             const vacaciones = salario * 0.0417;
             const totalPrestaciones = prima + cesantias + intCesantias + vacaciones;
             
-            // Employer social security
+            // Employer social security (on salary only)
             const aportesPension = salario * 0.12;
             const aportesARL = salario * settings.arl;
             const aportesSalud = settings.exonerado ? 0 : salario * 0.085;
             const totalSegSocial = aportesPension + aportesARL + aportesSalud;
             
-            // Parafiscales
+            // Parafiscales (on salary only)
             const cajaComp = salario * 0.04;
             const sena = settings.exonerado ? 0 : salario * 0.02;
             const icbf = settings.exonerado ? 0 : salario * 0.03;
             const totalParafiscales = cajaComp + sena + icbf;
             
-            const costoTotal = totalDevengado + totalPrestaciones + totalSegSocial + totalParafiscales;
+            const costoTotal = totalDevengadoBruto + totalPrestaciones + totalSegSocial + totalParafiscales;
             
             // Update UI
             document.getElementById('diasPagar').textContent = paidDays.toFixed(1);
+            document.getElementById('diasBono').textContent = workedDays;
+            document.getElementById('bonoValor').textContent = Math.round(bonoDiario).toLocaleString('es-CO');
             document.getElementById('salarioBase').textContent = formatCurrency(salario);
-            document.getElementById('auxTransporte').textContent = formatCurrency(auxilio);
+            document.getElementById('auxTransporte').textContent = formatCurrency(auxilioLegal);
+            document.getElementById('bonoTransporte').textContent = formatCurrency(bonoTransporte);
             document.getElementById('descSalud').textContent = '-' + formatCurrency(descSalud);
             document.getElementById('descPension').textContent = '-' + formatCurrency(descPension);
             document.getElementById('netoPagar').textContent = formatCurrency(netoPagar);
             
-            document.getElementById('totalDevengado').textContent = formatCurrency(totalDevengado);
+            document.getElementById('totalDevengado').textContent = formatCurrency(totalDevengadoBruto);
             document.getElementById('prestaciones').textContent = formatCurrency(totalPrestaciones);
             document.getElementById('segSocial').textContent = formatCurrency(totalSegSocial);
             document.getElementById('parafiscales').textContent = formatCurrency(totalParafiscales);
@@ -747,7 +894,7 @@
             document.getElementById('intCesantias').textContent = formatCurrency(intCesantias);
             document.getElementById('vacaciones').textContent = formatCurrency(vacaciones);
             
-            return { paidDays, netoPagar, costoTotal };
+            return { paidDays, workedDays, netoPagar, costoTotal, bonoTransporte };
         }
 
         function formatCurrency(value) {
@@ -755,23 +902,37 @@
         }
 
         // History
-        function saveMonth() {
-            const { paidDays, netoPagar, costoTotal } = updateSummary();
-            const monthKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+        function saveQuincena() {
+            const { paidDays, workedDays, netoPagar, costoTotal, bonoTransporte } = updateSummary();
+            const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
             
-            // Remove existing entry for this month
-            history = history.filter(h => h.month !== monthKey);
+            let periodKey, periodName;
+            if (summaryQuincena === 'all') {
+                periodKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}`;
+                periodName = `${MONTHS[currentMonth]} ${currentYear}`;
+            } else if (summaryQuincena === 1) {
+                periodKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-Q1`;
+                periodName = `${MONTHS[currentMonth]} 1-15, ${currentYear}`;
+            } else {
+                periodKey = `${currentYear}-${String(currentMonth + 1).padStart(2, '0')}-Q2`;
+                periodName = `${MONTHS[currentMonth]} 16-${daysInMonth}, ${currentYear}`;
+            }
+            
+            // Remove existing entry
+            history = history.filter(h => h.period !== periodKey);
             
             history.push({
-                month: monthKey,
-                monthName: `${MONTHS[currentMonth]} ${currentYear}`,
+                period: periodKey,
+                periodName,
                 paidDays,
+                workedDays,
                 netoPagar,
                 costoTotal,
+                bonoTransporte,
                 savedAt: new Date().toISOString()
             });
             
-            history.sort((a, b) => b.month.localeCompare(a.month));
+            history.sort((a, b) => b.period.localeCompare(a.period));
             saveData();
             alert('✅ Liquidación guardada');
             renderHistory();
@@ -789,6 +950,7 @@
                 `;
                 document.getElementById('totalPagado').textContent = '$0';
                 document.getElementById('totalCosto').textContent = '$0';
+                document.getElementById('totalBono').textContent = '$0';
                 document.getElementById('totalDias').textContent = '0';
                 document.getElementById('totalVacaciones').textContent = '0 días';
                 return;
@@ -797,8 +959,8 @@
             list.innerHTML = history.map(h => `
                 <div class="history-item">
                     <div>
-                        <div class="history-month">${h.monthName}</div>
-                        <div class="history-details">${h.paidDays} días trabajados</div>
+                        <div class="history-month">${h.periodName}</div>
+                        <div class="history-details">${h.workedDays || h.paidDays} días trabajados</div>
                     </div>
                     <div class="history-amount">${formatCurrency(h.netoPagar)}</div>
                 </div>
@@ -808,8 +970,9 @@
             const totals = history.reduce((acc, h) => ({
                 pagado: acc.pagado + h.netoPagar,
                 costo: acc.costo + h.costoTotal,
-                dias: acc.dias + h.paidDays
-            }), { pagado: 0, costo: 0, dias: 0 });
+                dias: acc.dias + (h.workedDays || h.paidDays),
+                bono: acc.bono + (h.bonoTransporte || 0)
+            }), { pagado: 0, costo: 0, dias: 0, bono: 0 });
             
             // Count vacation days
             let vacationDays = 0;
@@ -819,6 +982,7 @@
             
             document.getElementById('totalPagado').textContent = formatCurrency(totals.pagado);
             document.getElementById('totalCosto').textContent = formatCurrency(totals.costo);
+            document.getElementById('totalBono').textContent = formatCurrency(totals.bono);
             document.getElementById('totalDias').textContent = totals.dias.toFixed(1);
             document.getElementById('totalVacaciones').textContent = `${vacationDays} días`;
         }
@@ -831,6 +995,8 @@
             document.getElementById('empCargo').value = settings.cargo || '';
             document.getElementById('salarioConfig').value = settings.salario;
             document.getElementById('auxilioConfig').value = settings.auxilio;
+            document.getElementById('bonoTotalConfig').value = settings.bonoTotal || 27100;
+            document.getElementById('diasSemanaConfig').value = settings.diasSemana || 6;
             document.getElementById('exoneradoConfig').value = String(settings.exonerado);
             document.getElementById('arlConfig').value = settings.arl;
         }
@@ -842,6 +1008,8 @@
             settings.cargo = document.getElementById('empCargo').value;
             settings.salario = parseInt(document.getElementById('salarioConfig').value) || 1750905;
             settings.auxilio = parseInt(document.getElementById('auxilioConfig').value) || 249095;
+            settings.bonoTotal = parseInt(document.getElementById('bonoTotalConfig').value) || 27100;
+            settings.diasSemana = parseInt(document.getElementById('diasSemanaConfig').value) || 6;
             settings.exonerado = document.getElementById('exoneradoConfig').value === 'true';
             settings.arl = parseFloat(document.getElementById('arlConfig').value);
             
